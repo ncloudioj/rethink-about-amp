@@ -80,6 +80,19 @@ fn main() {
     std::thread::sleep(std::time::Duration::from_secs(1));
     println!("\n---------------------------------------\n");
 
+    // 3. Hybrid
+    {
+        let index = measure_memory("Hybrid", || {
+            let mut index = HybridAmpIndex::new();
+            index.build(&amps).unwrap();
+            index
+        });
+
+        println!("Hybrid stats: {:?}", index.stats());
+        let results = index.query("amaz").unwrap();
+        println!("Hybrid query 'amaz' returned {} results", results.len());
+    }
+
     // Print a summary at the end
     println!("\n=========== Memory Usage Summary ===========");
     println!("Note: These measurements include all data structures,");

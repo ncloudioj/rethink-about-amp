@@ -1,6 +1,4 @@
-use rethink_about_amp::{
-    AmpIndexer, BTreeAmpIndex, FstAmpIndex, load_amp_data
-};
+use rethink_about_amp::{AmpIndexer, BTreeAmpIndex, FstAmpIndex, HybridAmpIndex, load_amp_data};
 use std::path::Path;
 
 fn prepare_btree_index() -> BTreeAmpIndex {
@@ -17,6 +15,15 @@ fn prepare_fst_index() -> FstAmpIndex {
     let amps = load_amp_data(data_path).expect("Failed to load AMP data");
 
     let mut index = FstAmpIndex::new();
+    index.build(&amps).expect("Failed to build FST index");
+    index
+}
+
+fn prepare_hybrid_index() -> HybridAmpIndex {
+    let data_path = Path::new("data/amp-us-desktop.json");
+    let amps = load_amp_data(data_path).expect("Failed to load AMP data");
+
+    let mut index = HybridAmpIndex::new();
     index.build(&amps).expect("Failed to build FST index");
     index
 }
@@ -150,4 +157,22 @@ fn test_fst_query_urls() {
 fn test_fst_stats() {
     let index = prepare_fst_index();
     test_stats_for(&index, "FST");
+}
+
+#[test]
+fn test_hybrid_amazon_prefix_queries() {
+    let index = prepare_hybrid_index();
+    test_amazon_prefix_queries_for(&index, "Hybrid");
+}
+
+#[test]
+fn test_hybrid_query_urls() {
+    let index = prepare_hybrid_index();
+    test_query_urls_for(&index, "Hybrid");
+}
+
+#[test]
+fn test_hybrid_stats() {
+    let index = prepare_hybrid_index();
+    test_stats_for(&index, "Hybrid");
 }

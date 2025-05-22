@@ -1,10 +1,5 @@
 use crate::common::{
-    AmpIndexer,
-    AmpResult,
-    OriginalAmp,
-    RunEndEncoding,
-    collapse_keywords,
-    extract_template,
+    AmpIndexer, AmpResult, OriginalAmp, RunEndEncoding, collapse_keywords, extract_template,
 };
 use fst::{Automaton, IntoStreamer, Map, MapBuilder, Streamer};
 use std::collections::HashMap;
@@ -75,11 +70,8 @@ impl AmpIndexer for FstAmpIndex {
             };
 
             // Intern URL templates
-            let (url_tid, url_suf) = extract_template(
-                &amp.url,
-                &mut url_lookup,
-                &mut self.url_templates,
-            );
+            let (url_tid, url_suf) =
+                extract_template(&amp.url, &mut url_lookup, &mut self.url_templates);
             let (clk_tid, clk_suf) = extract_template(
                 &amp.click_url,
                 &mut click_lookup,
@@ -107,7 +99,8 @@ impl AmpIndexer for FstAmpIndex {
                 icon_id: amp.icon_id.clone(),
             });
 
-            self.icons.entry(amp.icon_id.clone())
+            self.icons
+                .entry(amp.icon_id.clone())
                 .or_insert_with(|| format!("icon://{}", amp.icon_id));
 
             // Run-end encode full keywords
@@ -125,18 +118,14 @@ impl AmpIndexer for FstAmpIndex {
 
             // Collapse prefixes, store triple (sidx,fkw_idx,min_pref)
             if !amp.keywords.is_empty() {
-                for (_, (kw, min_pref)) in collapse_keywords(&amp.keywords)
-                    .into_iter()
-                    .enumerate()
+                for (_, (kw, min_pref)) in collapse_keywords(&amp.keywords).into_iter().enumerate()
                 {
                     // Store the collapsed keyword with its full data
-                    keywords_map.insert(
-                        kw.clone(),
-                        (sidx, fkw_start, min_pref),
-                    );
+                    keywords_map.insert(kw.clone(), (sidx, fkw_start, min_pref));
 
                     // Also store in debug_keywords for easier debugging
-                    self.debug_keywords.insert(kw.clone(), (sidx, fkw_start, min_pref));
+                    self.debug_keywords
+                        .insert(kw.clone(), (sidx, fkw_start, min_pref));
                 }
             }
         }
@@ -148,9 +137,7 @@ impl AmpIndexer for FstAmpIndex {
 
         for (kw, (sidx, fidx, min_pref)) in entries {
             // Pack into u64: [upper32 sidx][middle16 fidx][lower16 min_pref]
-            let value = ((sidx as u64) << 32)
-                | ((fidx as u64) << 16)
-                | (min_pref as u64);
+            let value = ((sidx as u64) << 32) | ((fidx as u64) << 16) | (min_pref as u64);
             builder.insert(kw, value)?;
         }
         self.fst = builder.into_map();
@@ -190,7 +177,7 @@ impl AmpIndexer for FstAmpIndex {
                     None => best_match = Some((key_bytes.to_vec(), value)),
                     Some((ref best_key, _)) if key_bytes.len() < best_key.len() => {
                         best_match = Some((key_bytes.to_vec(), value));
-                    },
+                    }
                     _ => {}
                 }
             }
@@ -217,7 +204,10 @@ impl AmpIndexer for FstAmpIndex {
         stats.insert("advertisers_count".to_string(), self.advertisers.len());
         stats.insert("url_templates_count".to_string(), self.url_templates.len());
         stats.insert("icons_count".to_string(), self.icons.len());
-        stats.insert("debug_keywords_count".to_string(), self.debug_keywords.len());
+        stats.insert(
+            "debug_keywords_count".to_string(),
+            self.debug_keywords.len(),
+        );
         stats
     }
 }
@@ -231,7 +221,8 @@ impl FstAmpIndex {
     ) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(sug) = self.suggestions.get(sidx) {
             // Reconstruct URLs first - we'll need these regardless
-            let url = self.reconstruct_url(sug.url_template_id, &sug.url_suffix, &self.url_templates);
+            let url =
+                self.reconstruct_url(sug.url_template_id, &sug.url_suffix, &self.url_templates);
             let click_url = self.reconstruct_url(
                 sug.click_url_template_id,
                 &sug.click_url_suffix,
@@ -244,7 +235,11 @@ impl FstAmpIndex {
             );
 
             // Get advertiser name - we'll use this for fallback if needed
-            let advertiser = self.advertisers.get(&sug.advertiser_id).cloned().unwrap_or_default();
+            let advertiser = self
+                .advertisers
+                .get(&sug.advertiser_id)
+                .cloned()
+                .unwrap_or_default();
             let icon = self.icons.get(&sug.icon_id).cloned().unwrap_or_default();
 
             // Get the full keyword - if it doesn't exist, use advertiser name as fallback
