@@ -4,6 +4,31 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-itertools = "0.14.0"
-serde = { version = "1.0.219", features = ["derive"] }
-serde_json = "1.0.140"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+fst = "0.4"
+jemallocator = "0.5"
+jemalloc-ctl = "0.5"
+qp-trie = "0.8"
+
+[dev-dependencies]
+criterion = { version = "0.4", features = ["html_reports"] }
+
+[[bin]]
+name = "memory_comparison"
+path = "src/bin/memory_comparison.rs"
+
+[[bench]]
+name = "benchmark"
+harness = false
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+
+[profile.bench]
+opt-level = 3
+debug = true
+lto = true
+codegen-units = 1
