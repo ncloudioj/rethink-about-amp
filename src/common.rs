@@ -34,6 +34,32 @@ pub struct AmpResult {
     pub full_keyword: String,
 }
 
+/// Full keyword for each keyword.
+#[derive(Debug)]
+pub enum FullKeyword {
+    /// If the full keyword is the same as the keyword.
+    Same,
+    /// If they're different, the full keyword is stored here.
+    Different(String),
+}
+
+impl FullKeyword {
+    fn new(keyword: &str, full_keyword: &str) -> Self {
+        if keyword == full_keyword {
+            FullKeyword::Same
+        } else {
+            FullKeyword::Different(full_keyword.to_string())
+        }
+    }
+
+    pub fn full_keyword(&self, keyword: &str) -> String {
+        match self {
+            FullKeyword::Same => keyword.to_string(),
+            FullKeyword::Different(fw) => fw.to_string(),
+        }
+    }
+}
+
 /// Interface for all AMP indexers
 pub trait AmpIndexer {
     /// Create a new index
@@ -139,5 +165,54 @@ pub fn collapse_keywords(keywords: &[String]) -> Vec<(String, usize)> {
             i += 1;
         }
     }
+    out
+}
+
+/// Extent `collapse_keywords` to return a `FullKeyword` for each collapsed keyword.
+pub fn collapse_keywords_ex(
+    keywords: &[String],
+    full_keywords: &[(String, usize)],
+) -> Vec<(String, usize, FullKeyword)> {
+    let mut out: Vec<(String, usize, FullKeyword)> = Vec::new();
+
+    // Restore the pointwise full keywords sequence via the RLE encoded `full_keywords`.
+    let fks = full_keywords.iter().flat_map(|(full_keyword, repeat_for)| {
+        std::iter::repeat_n(full_keyword.as_str(), *repeat_for)
+    });
+
+    // Zip up the keywords with the full_keywords.
+    let keywords_ext: Vec<(_, _)> = keywords.iter().map(String::as_str).zip(fks).collect();
+
+    let mut i = 0;
+    while i < keywords_ext.len() {
+        let (curr, curr_fk) = keywords_ext[i];
+
+        let curr_len = curr.chars().count();
+        let mut j = i + 1;
+        let mut n_collapsed = 0;
+
+        // extend the run as long as each next is curr + exactly one char
+        while j < keywords_ext.len() {
+            let (nxt, _) = keywords_ext[j];
+            if nxt.starts_with(curr) && nxt.chars().count() == curr_len + n_collapsed + 1 {
+                n_collapsed += 1;
+                j += 1;
+            } else {
+                break;
+            }
+        }
+
+        assert_eq!(j, i + n_collapsed + 1);
+        if j > i + 1 {
+            // we saw a run [i .. j), so collapse to keywords_ext[j-1]
+            let (kw, fk) = keywords_ext[j - 1];
+            out.push((kw.to_string(), curr_len, FullKeyword::new(kw, fk)));
+            i = j;
+        } else {
+            out.push((curr.to_string(), curr_len, FullKeyword::new(curr, curr_fk)));
+            i += 1;
+        }
+    }
+
     out
 }

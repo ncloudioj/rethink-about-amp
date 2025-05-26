@@ -1,5 +1,5 @@
 use crate::common::{
-    AmpIndexer, AmpResult, OriginalAmp, RunEndEncoding, collapse_keywords, extract_template,
+    AmpIndexer, AmpResult, FullKeyword, OriginalAmp, collapse_keywords_ex, extract_template,
 };
 use std::collections::{BTreeMap, HashMap};
 use std::ops::Bound::{Included, Unbounded};
@@ -21,10 +21,9 @@ struct AmpSuggestion {
 }
 
 pub struct BTreeAmpIndex {
-    /// collapsed prefix → (suggestion_idx, full_kw_idx, unused_min_pref)
-    pub keyword_index: BTreeMap<String, (usize, usize, usize)>,
+    /// collapsed prefix → (suggestion_idx, unused_min_pref, full_keyword)
+    pub keyword_index: BTreeMap<String, (usize, usize, FullKeyword)>,
     suggestions: Vec<AmpSuggestion>,
-    full_keywords: RunEndEncoding,
     advertisers: HashMap<u32, String>,
     url_templates: HashMap<u32, String>,
     click_templates: HashMap<u32, String>,
@@ -37,7 +36,6 @@ impl AmpIndexer for BTreeAmpIndex {
         BTreeAmpIndex {
             keyword_index: BTreeMap::new(),
             suggestions: Vec::new(),
-            full_keywords: RunEndEncoding::new(),
             advertisers: HashMap::new(),
             url_templates: HashMap::new(),
             click_templates: HashMap::new(),
@@ -95,15 +93,11 @@ impl AmpIndexer for BTreeAmpIndex {
                 .entry(amp.icon_id.clone())
                 .or_insert_with(|| format!("icon://{}", amp.icon_id));
 
-            // Encode full_keywords
-            let base = self.full_keywords.indices.len();
-            for (kw, cnt) in &amp.full_keywords {
-                self.full_keywords.add(kw.clone(), *cnt);
-            }
-
             // Collapse each chain on keyword partials
-            for (i, (kw, min_pref)) in collapse_keywords(&amp.keywords).into_iter().enumerate() {
-                self.keyword_index.insert(kw, (idx, base + i, min_pref));
+            for (kw, min_pref, fw) in
+                collapse_keywords_ex(&amp.keywords, &amp.full_keywords).into_iter()
+            {
+                self.keyword_index.insert(kw, (idx, min_pref, fw));
             }
         }
 
@@ -113,14 +107,14 @@ impl AmpIndexer for BTreeAmpIndex {
     fn query(&self, query: &str) -> Result<Vec<AmpResult>, Box<dyn std::error::Error>> {
         let qlen = query.chars().count();
         let range = (Included(query.to_string()), Unbounded);
-        let mut best: Option<(&String, &(usize, usize, usize))> = None;
+        let mut best: Option<(&String, &(usize, usize, FullKeyword))> = None;
 
         // scan collapsed keys in order, picking the shortest key that meets min_pref
         for (key, val) in self.keyword_index.range(range) {
             if !key.starts_with(query) {
                 break;
             }
-            let &(_, _, min_pref) = val;
+            let &(_, min_pref, _) = val;
             // require query length at least the stored prefix length
             if qlen < min_pref {
                 continue;
@@ -133,9 +127,9 @@ impl AmpIndexer for BTreeAmpIndex {
         }
 
         // if we found a match, build and return it
-        if let Some((_, &(sidx, fidx, _))) = best {
+        if let Some((key, &(sidx, _, ref fk))) = best {
             let mut out = Vec::new();
-            self.build_result(sidx, fidx, &mut out)?;
+            self.build_result(key, sidx, fk, &mut out)?;
             return Ok(out);
         }
         Ok(Vec::new())
@@ -145,10 +139,6 @@ impl AmpIndexer for BTreeAmpIndex {
         let mut m = HashMap::new();
         m.insert("keyword_index_size".into(), self.keyword_index.len());
         m.insert("suggestions_count".into(), self.suggestions.len());
-        m.insert(
-            "full_keywords_count".into(),
-            self.full_keywords.indices.len(),
-        );
         m.insert("advertisers_count".into(), self.advertisers.len());
         m.insert("url_templates_count".into(), self.url_templates.len());
         m.insert("icons_count".into(), self.icons.len());
@@ -159,12 +149,12 @@ impl AmpIndexer for BTreeAmpIndex {
 impl BTreeAmpIndex {
     fn build_result(
         &self,
+        keyword: &str,
         sidx: usize,
-        fidx: usize,
+        full_keyword: &FullKeyword,
         results: &mut Vec<AmpResult>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let sugg = &self.suggestions[sidx];
-        let full_kw = self.full_keywords.get(fidx).unwrap_or_default();
 
         let url = Self::reconstruct(&self.url_templates, sugg.url_tid, &sugg.url_suf);
         let click = Self::reconstruct(&self.click_templates, sugg.click_tid, &sugg.click_suf);
@@ -185,7 +175,7 @@ impl BTreeAmpIndex {
             block_id: sugg.block_id,
             iab_category: sugg.iab.clone(),
             icon,
-            full_keyword: full_kw.to_string(),
+            full_keyword: full_keyword.full_keyword(keyword),
         });
         Ok(())
     }
