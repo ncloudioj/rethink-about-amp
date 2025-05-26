@@ -116,16 +116,20 @@ pub fn collapse_keywords(keywords: &[String]) -> Vec<(String, usize)> {
 
         let curr_len = curr.chars().count();
         let mut j = i + 1;
+        let mut n_collapsed = 0;
 
         // extend the run as long as each next is curr + exactly one char
         while j < keywords.len() {
             let nxt = &keywords[j];
-            if nxt.starts_with(curr) && nxt.chars().count() == curr_len + 1 {
+            if nxt.starts_with(curr) && nxt.chars().count() == curr_len + n_collapsed + 1 {
+                n_collapsed += 1;
                 j += 1;
             } else {
                 break;
             }
         }
+
+        assert_eq!(j, i + n_collapsed + 1);
         if j > i + 1 {
             // we saw a run [i .. j), so collapse to keywords[j-1]
             out.push((keywords[j - 1].clone(), curr_len));
