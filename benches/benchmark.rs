@@ -5,55 +5,52 @@ use std::time::Duration;
 // Create benchmark data once
 fn create_benchmark_data() -> Vec<OriginalAmp> {
     // Try to load real data, fall back to synthetic data
-    match load_amp_data("data/amp-us-desktop.json") {
-        Ok(data) => data,
-        Err(_) => {
-            // Create synthetic data for benchmarking if real data not available
-            let mut synthetic_data = Vec::new();
-            let advertisers = ["Amazon", "Wayfair", "Target", "eBay", "Walmart"];
-            let categories = ["22 - Shopping", "18 - Technology", "19 - Travel"];
+    load_amp_data("data/amp-us-desktop.json").unwrap_or_else(|_| {
+        // Create synthetic data for benchmarking if real data not available
+        let mut synthetic_data = Vec::new();
+        let advertisers = ["Amazon", "Wayfair", "Target", "eBay", "Walmart"];
+        let categories = ["22 - Shopping", "18 - Technology", "19 - Travel"];
 
-            for i in 0..1000 {
-                let advertiser = advertisers[i % advertisers.len()];
-                let category = categories[i % categories.len()];
+        for i in 0..1000 {
+            let advertiser = advertisers[i % advertisers.len()];
+            let category = categories[i % categories.len()];
 
-                synthetic_data.push(OriginalAmp {
-                    keywords: vec![
-                        format!("kw{}", i),
-                        format!("kw{}_longer", i),
-                        format!("keyword_{}", i),
-                        format!("keyword_{}_extended", i),
-                    ],
-                    title: format!("{} - Product {}", advertiser, i),
-                    url: format!(
-                        "https://www.{}.com/product/{}?tag=test",
-                        advertiser.to_lowercase(),
-                        i
-                    ),
-                    score: Some(0.1 + (i as f64 % 10.0) / 10.0),
-                    full_keywords: vec![
-                        (format!("keyword_{}", i), 5),
-                        (format!("keyword_{}_extended", i), 3),
-                    ],
-                    advertiser: advertiser.to_string(),
-                    block_id: i as i32,
-                    iab_category: category.to_string(),
-                    click_url: format!(
-                        "https://click.{}.com/{}?ref=test",
-                        advertiser.to_lowercase(),
-                        i
-                    ),
-                    impression_url: format!(
-                        "https://imp.{}.com/{}?ref=test",
-                        advertiser.to_lowercase(),
-                        i
-                    ),
-                    icon_id: format!("icon_{}", i % 50),
-                });
-            }
-            synthetic_data
+            synthetic_data.push(OriginalAmp {
+                keywords: vec![
+                    format!("kw{}", i),
+                    format!("kw{}_longer", i),
+                    format!("keyword_{}", i),
+                    format!("keyword_{}_extended", i),
+                ],
+                title: format!("{} - Product {}", advertiser, i),
+                url: format!(
+                    "https://www.{}.com/product/{}?tag=test",
+                    advertiser.to_lowercase(),
+                    i
+                ),
+                score: Some(0.1 + (i as f64 % 10.0) / 10.0),
+                full_keywords: vec![
+                    (format!("keyword_{}", i), 5),
+                    (format!("keyword_{}_extended", i), 3),
+                ],
+                advertiser: advertiser.to_string(),
+                block_id: i as i32,
+                iab_category: category.to_string(),
+                click_url: format!(
+                    "https://click.{}.com/{}?ref=test",
+                    advertiser.to_lowercase(),
+                    i
+                ),
+                impression_url: format!(
+                    "https://imp.{}.com/{}?ref=test",
+                    advertiser.to_lowercase(),
+                    i
+                ),
+                icon_id: format!("icon_{}", i % 50),
+            });
         }
-    }
+        synthetic_data
+    })
 }
 
 // Build index benchmark
@@ -80,9 +77,9 @@ fn build_benchmark(c: &mut Criterion) {
         })
     });
 
-    group.bench_function("fst", |b| {
+    group.bench_function("art", |b| {
         b.iter(|| {
-            let mut index = FstAmpIndex::new();
+            let mut index = BlartAmpIndex::new();
             index.build(black_box(&amp_data)).unwrap();
             black_box(index)
         })
@@ -102,8 +99,8 @@ fn query_benchmark(c: &mut Criterion) {
     let mut btree_index = BTreeAmpIndex::new();
     btree_index.build(&amp_data).unwrap();
 
-    let mut fst_index = FstAmpIndex::new();
-    fst_index.build(&amp_data).unwrap();
+    let mut art_index = BlartAmpIndex::new();
+    art_index.build(&amp_data).unwrap();
 
     // Test different query patterns
     let test_queries = vec![
@@ -130,8 +127,8 @@ fn query_benchmark(c: &mut Criterion) {
             b.iter(|| black_box(btree_index.query(black_box(q)).unwrap()))
         });
 
-        group.bench_with_input(BenchmarkId::new("fst", query), query, |b, q| {
-            b.iter(|| black_box(fst_index.query(black_box(q)).unwrap()))
+        group.bench_with_input(BenchmarkId::new("art", query), query, |b, q| {
+            b.iter(|| black_box(art_index.query(black_box(q)).unwrap()))
         });
 
         group.finish();
@@ -153,11 +150,11 @@ fn memory_analysis_benchmark(c: &mut Criterion) {
             btree_index.build(black_box(&amp_data)).unwrap();
             let btree_stats = btree_index.stats();
 
-            let mut fst_index = FstAmpIndex::new();
-            fst_index.build(black_box(&amp_data)).unwrap();
-            let fst_stats = fst_index.stats();
+            let mut art_index = BlartAmpIndex::new();
+            art_index.build(black_box(&amp_data)).unwrap();
+            let art_stats = art_index.stats();
 
-            black_box((hybrid_stats, btree_stats, fst_stats))
+            black_box((hybrid_stats, btree_stats, art_stats))
         })
     });
 }
@@ -172,8 +169,8 @@ fn prefix_iteration_benchmark(c: &mut Criterion) {
     let mut btree_index = BTreeAmpIndex::new();
     btree_index.build(&amp_data).unwrap();
 
-    let mut fst_index = FstAmpIndex::new();
-    fst_index.build(&amp_data).unwrap();
+    let mut art_index = BlartAmpIndex::new();
+    art_index.build(&amp_data).unwrap();
 
     let prefix_queries = vec!["a", "am", "k", "kw", "keyword"];
 
@@ -194,9 +191,9 @@ fn prefix_iteration_benchmark(c: &mut Criterion) {
             })
         });
 
-        group.bench_with_input(BenchmarkId::new("fst", prefix), prefix, |b, p| {
+        group.bench_with_input(BenchmarkId::new("art", prefix), prefix, |b, p| {
             b.iter(|| {
-                let results = fst_index.query(black_box(p)).unwrap();
+                let results = art_index.query(black_box(p)).unwrap();
                 black_box(results.len())
             })
         });

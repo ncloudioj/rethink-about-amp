@@ -64,17 +64,17 @@ fn main() {
     std::thread::sleep(std::time::Duration::from_secs(1));
     println!("\n---------------------------------------\n");
 
-    // 2. FST
+    // 2. Blart
     {
-        let index = measure_memory("FST", || {
-            let mut index = FstAmpIndex::new();
+        let index = measure_memory("Blart", || {
+            let mut index = BlartAmpIndex::new();
             index.build(&amps).unwrap();
             index
         });
 
-        println!("FST stats: {:?}", index.stats());
+        println!("Blart stats: {:?}", index.stats());
         let results = index.query("amaz").unwrap();
-        println!("FST query 'amaz' returned {} results", results.len());
+        println!("Blart query 'amaz' returned {} results", results.len());
     }
 
     std::thread::sleep(std::time::Duration::from_secs(1));

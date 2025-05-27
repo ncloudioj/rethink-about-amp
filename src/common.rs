@@ -35,7 +35,7 @@ pub struct AmpResult {
 }
 
 /// Full keyword for each keyword.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum FullKeyword {
     /// If the full keyword is the same as the keyword.
     Same,
