@@ -101,6 +101,8 @@ impl AmpIndexer for BTreeAmpIndex {
             }
         }
 
+        self.suggestions.shrink_to_fit();
+
         Ok(())
     }
 

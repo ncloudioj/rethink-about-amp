@@ -212,6 +212,8 @@ impl AmpIndexer for HybridAmpIndex {
         // Optimize cache by sorting entries by relevance
         self.optimize_cache();
 
+        self.suggestions.shrink_to_fit();
+
         Ok(())
     }
 

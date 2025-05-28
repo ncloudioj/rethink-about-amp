@@ -118,6 +118,8 @@ impl AmpIndexer for BlartAmpIndex {
             }
         }
 
+        self.suggestions.shrink_to_fit();
+
         Ok(())
     }
 
