@@ -3,14 +3,24 @@ name = "rethink-about-amp"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+name = "rethink_about_amp"
+crate-type = ["rlib", "cdylib"]
+
 [dependencies]
 blart = "0.3.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 fst = "0.4"
+qp-trie = "0.8"
 jemallocator = "0.5"
 jemalloc-ctl = "0.5"
-qp-trie = "0.8"
+
+# PyO3 dependencies
+pyo3 = { version = "0.20", features = [
+    "extension-module",
+    "abi3-py38",
+], optional = true }
 
 [dev-dependencies]
 criterion = { version = "0.4", features = ["html_reports"] }
@@ -25,7 +35,7 @@ harness = false
 
 [profile.release]
 opt-level = 3
-lto = true
+lto = "thin"      # PyO3 specific settings
 codegen-units = 1
 
 [profile.bench]
@@ -33,3 +43,7 @@ opt-level = 3
 debug = true
 lto = true
 codegen-units = 1
+
+[features]
+default = []
+python = ["pyo3"]

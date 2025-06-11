@@ -1,4 +1,4 @@
-use rethink_about_amp::{AmpIndexer, BlartAmpIndex, BTreeAmpIndex, HybridAmpIndex, load_amp_data};
+use rethink_about_amp::{AmpIndexer, BTreeAmpIndex, BlartAmpIndex, HybridAmpIndex, load_amp_data};
 use std::path::Path;
 
 fn prepare_btree_index() -> BTreeAmpIndex {
