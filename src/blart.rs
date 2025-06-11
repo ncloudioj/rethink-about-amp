@@ -74,15 +74,22 @@ impl AmpIndexer for BlartAmpIndex {
 
         for amp in amps {
             // Dictionary encode all fields
-            let advertiser_id = Self::intern(&amp.advertiser, &mut adv_lookup, &mut self.advertisers);
+            let advertiser_id =
+                Self::intern(&amp.advertiser, &mut adv_lookup, &mut self.advertisers);
             let title_id = Self::intern(&amp.title, &mut title_lookup, &mut self.titles);
             let iab_id = Self::intern(&amp.iab_category, &mut iab_lookup, &mut self.iab_categories);
             let icon_id = Self::intern(&amp.icon_id, &mut icon_lookup, &mut self.icons);
 
             // Extract URL templates
-            let (url_tid, url_suf) = extract_template(&amp.url, &mut url_lookup, &mut self.url_templates);
-            let (click_tid, clk_suf) = extract_template(&amp.click_url, &mut click_lookup, &mut self.click_templates);
-            let (imp_tid, imp_suf) = extract_template(&amp.impression_url, &mut imp_lookup, &mut self.imp_templates);
+            let (url_tid, url_suf) =
+                extract_template(&amp.url, &mut url_lookup, &mut self.url_templates);
+            let (click_tid, clk_suf) =
+                extract_template(&amp.click_url, &mut click_lookup, &mut self.click_templates);
+            let (imp_tid, imp_suf) = extract_template(
+                &amp.impression_url,
+                &mut imp_lookup,
+                &mut self.imp_templates,
+            );
 
             // Store suggestion
             let sidx = self.suggestions.len();
@@ -174,7 +181,11 @@ impl AmpIndexer for BlartAmpIndex {
 
 impl BlartAmpIndex {
     /// Helper for string interning
-    fn intern(value: &str, lookup: &mut HashMap<String, u32>, dict: &mut HashMap<u32, String>) -> u32 {
+    fn intern(
+        value: &str,
+        lookup: &mut HashMap<String, u32>,
+        dict: &mut HashMap<u32, String>,
+    ) -> u32 {
         if let Some(&id) = lookup.get(value) {
             id
         } else {
@@ -195,8 +206,16 @@ impl BlartAmpIndex {
 
         // Reconstruct all fields from dictionaries
         let title = self.titles.get(&sug.title_id).cloned().unwrap_or_default();
-        let advertiser = self.advertisers.get(&sug.advertiser_id).cloned().unwrap_or_default();
-        let iab_category = self.iab_categories.get(&sug.iab_id).cloned().unwrap_or_default();
+        let advertiser = self
+            .advertisers
+            .get(&sug.advertiser_id)
+            .cloned()
+            .unwrap_or_default();
+        let iab_category = self
+            .iab_categories
+            .get(&sug.iab_id)
+            .cloned()
+            .unwrap_or_default();
         let icon = self.icons.get(&sug.icon_id).cloned().unwrap_or_default();
 
         // Handle full keyword
@@ -210,8 +229,10 @@ impl BlartAmpIndex {
 
         // Reconstruct URLs
         let url = self.reconstruct_url(sug.url_tid, &sug.url_suffix, &self.url_templates);
-        let click_url = self.reconstruct_url(sug.click_tid, &sug.click_suffix, &self.click_templates);
-        let impression_url = self.reconstruct_url(sug.imp_tid, &sug.imp_suffix, &self.imp_templates);
+        let click_url =
+            self.reconstruct_url(sug.click_tid, &sug.click_suffix, &self.click_templates);
+        let impression_url =
+            self.reconstruct_url(sug.imp_tid, &sug.imp_suffix, &self.imp_templates);
 
         results.push(AmpResult {
             title,
@@ -228,8 +249,14 @@ impl BlartAmpIndex {
         Ok(())
     }
 
-    fn reconstruct_url(&self, template_id: u32, suffix: &str, templates: &HashMap<u32, String>) -> String {
-        templates.get(&template_id)
+    fn reconstruct_url(
+        &self,
+        template_id: u32,
+        suffix: &str,
+        templates: &HashMap<u32, String>,
+    ) -> String {
+        templates
+            .get(&template_id)
             .map(|t| format!("{}{}", t, suffix))
             .unwrap_or_else(|| suffix.to_string())
     }

@@ -61,18 +61,23 @@ To better levarage Run-Length-Encoding (or Run-End-Encoding), we can group sugge
 #### Templatize URL Fields
 For "click_url", "impression_url", and "url", they tend to share the same prefix for the same advertiser, it's possible to templatize those URLs via Dictionary Encoding to reduce redundancy. For example, if an advertiser has the two URLs: "https://www.foo.com/product?param01=bar" and "https://www.foo.com/product?param01=baz". We can templatize them as "{PREFIX-KEY-01}?param01=bar" and "{PREFIX-KEY-01}?param01=baz", respectively, where "{PREFIX-KEY-01}" points to "https://www.foo.com/product" in a prefix dictionary.
 
-# Benchmarks
+# Building Python package
 
-| Scenario                   | Hybrid        | B-tree        | FST       | Fastest |
-| -------------------------- | ------------- | ------------- | --------- | ------- |
-| **Build**                  | 12.774 ms     | **6.2106 ms** | 15.880 ms | B-tree  |
-| **Single-char query**      | **4.1416 µs** | 4.3900 µs     | 45.789 µs | Hybrid  |
-| **Double-char query**      | **560.42 ns** | 1.3634 µs     | 7.0247 µs | Hybrid  |
-| **Short-word query**       | **384.29 ns** | 1.0155 µs     | 474.62 ns | Hybrid  |
-| **Medium-word query**      | 830.02 ns     | **773.49 ns** | 4.4970 µs | B-tree  |
-| **Full-word query**        | **417.75 ns** | 912.38 ns     | 501.77 ns | Hybrid  |
-| **Long-phrase query**      | 462.49 ns     | **425.66 ns** | 548.80 ns | B-tree  |
-| **Synthetic-short query**  | 203.49 ns     | **102.08 ns** | 694.49 ns | B-tree  |
-| **Synthetic-medium query** | **40.567 ns** | 94.848 ns     | 861.90 ns | Hybrid  |
-| **Synthetic-long query**   | **39.658 ns** | 84.884 ns     | 852.00 ns | Hybrid  |
+```bash
+> pipx install maturin
+> maturin develop --features python
+```
 
+# Running Python library
+```
+> python test_call.py
+Found 1 results
+
+Result 1:
+  Title: Amazon.com - Official Site
+  Advertiser: Amazon
+  URL: https://www.amazon.com/?tag=admarketus-20&ref=pd_sl_924ab4435c5a5c23aa2804307ee0669ab36f88caee841ce51d1f2ecb&mfadid=adm
+  Full keyword: Amazon
+  Block ID: 59
+  IAB Category: 22 - Shopping
+```
