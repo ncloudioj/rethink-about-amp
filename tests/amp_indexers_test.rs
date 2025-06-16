@@ -123,6 +123,23 @@ fn test_stats_for<T: AmpIndexer>(index: &T, indexer_name: &str) {
     println!("{} stats: {:?}", indexer_name, stats);
 }
 
+fn test_scan_all_keywords(idx: &impl AmpIndexer) {
+    let data_path = Path::new("data/amp-us-desktop.json");
+    let amps = load_amp_data(data_path).expect("Failed to load AMP data");
+
+    for (n, amp) in amps.iter().enumerate() {
+        println!("=============Suggestion #: {n}");
+        // dbg!(amp);
+        for kw in &amp.keywords {
+            // dbg!(kw);
+            let res = idx.query(kw).expect("query failed");
+            assert_eq!(res.len(), 1, "missing key");
+            // TODO: check other fields other than `block_id`.
+            assert_eq!(res[0].block_id, amp.block_id, "incorrect suggestion");
+        }
+    }
+}
+
 #[test]
 fn test_btree_amazon_prefix_queries() {
     let index = prepare_btree_index();
@@ -176,3 +193,16 @@ fn test_blart_stats() {
     let index = prepare_blart_index();
     test_stats_for(&index, "Blart");
 }
+
+#[test]
+fn test_blart_full_scan() {
+    let index = prepare_blart_index();
+    test_scan_all_keywords(&index);
+}
+
+#[test]
+fn test_btree_full_scan() {
+    let index = prepare_btree_index();
+    test_scan_all_keywords(&index);
+}
+
