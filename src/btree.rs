@@ -116,7 +116,10 @@ impl AmpIndexer for BTreeAmpIndex {
             match (key, val) {
                 (key, _) if !key.starts_with(query) => break,
                 (_, &(_, min_pref, _)) if qlen < min_pref => continue,
-                (_, _) => best = Some((key, val)),
+                (_, _) => {
+                    best = Some((key, val));
+                    break;
+                }
             }
         }
 
