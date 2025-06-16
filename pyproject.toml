@@ -5,3 +5,16 @@ build-backend = "maturin"
 [project]
 name = "rethink-about-amp"
 version = "0.1.0"
+requires-python = "~=3.13"
+license = { text = "MPL-2.0" }
+dependencies = [
+    "maturin>=1.8.7",
+]
+
+[tool.uv]
+cache-keys = [{file = "pyproject.toml"}, {file = "rust/Cargo.toml"}, {file = "**/*.rs"}]
+# Uncomment to build Rust code in the development mode.
+# config-settings = { build-args = '--profile=dev' }
+
+[tool.maturin]
+features = ["pyo3/extension-module"]

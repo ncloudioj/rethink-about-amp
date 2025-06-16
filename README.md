@@ -63,9 +63,10 @@ For "click_url", "impression_url", and "url", they tend to share the same prefix
 
 # Building Python package
 
-```bash
-> pipx install maturin
-> maturin develop --features python
+```sh
+> uv sync
+> source .venv/bin/activate
+> maturin develop --uv --features python
 ```
 
 # Running Python library
