@@ -108,23 +108,15 @@ impl AmpIndexer for BTreeAmpIndex {
 
     fn query(&self, query: &str) -> Result<Vec<AmpResult>, Box<dyn std::error::Error>> {
         let qlen = query.chars().count();
-        let range = (Included(query.to_string()), Unbounded);
+        let range = (Included(query), Unbounded);
         let mut best: Option<(&String, &(usize, usize, FullKeyword))> = None;
 
         // scan collapsed keys in order, picking the shortest key that meets min_pref
-        for (key, val) in self.keyword_index.range(range) {
-            if !key.starts_with(query) {
-                break;
-            }
-            let &(_, min_pref, _) = val;
-            // require query length at least the stored prefix length
-            if qlen < min_pref {
-                continue;
-            }
-            match best {
-                None => best = Some((key, val)),
-                Some((bk, _)) if key.len() < bk.len() => best = Some((key, val)),
-                _ => {}
+        for (key, val) in self.keyword_index.range::<str, _>(range) {
+            match (key, val) {
+                (key, _) if !key.starts_with(query) => break,
+                (_, &(_, min_pref, _)) if qlen < min_pref => continue,
+                (_, _) => best = Some((key, val)),
             }
         }
 
