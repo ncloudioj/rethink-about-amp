@@ -116,7 +116,7 @@ fn query_benchmark(c: &mut Criterion) {
     ];
 
     for (query_type, query) in test_queries {
-        let mut group = c.benchmark_group(&format!("query/{}", query_type));
+        let mut group = c.benchmark_group(format!("query/{}", query_type));
         group.measurement_time(Duration::from_secs(10));
 
         group.bench_with_input(BenchmarkId::new("hybrid", query), query, |b, q| {
@@ -175,7 +175,7 @@ fn prefix_iteration_benchmark(c: &mut Criterion) {
     let prefix_queries = vec!["a", "am", "k", "kw", "keyword"];
 
     for prefix in prefix_queries {
-        let mut group = c.benchmark_group(&format!("prefix_iter/{}", prefix));
+        let mut group = c.benchmark_group(format!("prefix_iter/{}", prefix));
 
         group.bench_with_input(BenchmarkId::new("hybrid", prefix), prefix, |b, p| {
             b.iter(|| {

@@ -81,6 +81,12 @@ pub struct RunEndEncoding {
     pub indices: Vec<usize>,
 }
 
+impl Default for RunEndEncoding {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RunEndEncoding {
     pub fn new() -> Self {
         RunEndEncoding {

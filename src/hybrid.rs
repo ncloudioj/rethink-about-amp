@@ -60,11 +60,9 @@ impl ShortPrefixCache {
         let mut best_key_len = usize::MAX;
 
         for (key, value) in &self.exact_matches {
-            if key.starts_with(query) && query_len >= value.min_prefix_len {
-                if key.len() < best_key_len {
-                    best_match = Some(value);
-                    best_key_len = key.len();
-                }
+            if key.starts_with(query) && query_len >= value.min_prefix_len && key.len() < best_key_len {
+                best_match = Some(value);
+                best_key_len = key.len();
             }
         }
 
@@ -249,11 +247,9 @@ impl AmpIndexer for HybridAmpIndex {
         let mut best_len = usize::MAX;
 
         for (key, value) in self.main_trie.iter_prefix(query_bytes) {
-            if qlen >= value.min_prefix_len {
-                if key.len() < best_len {
-                    best_match = Some(value);
-                    best_len = key.len();
-                }
+            if qlen >= value.min_prefix_len && key.len() < best_len {
+                best_match = Some(value);
+                best_len = key.len();
             }
         }
 
