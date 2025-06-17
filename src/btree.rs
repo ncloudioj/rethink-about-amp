@@ -177,6 +177,13 @@ impl BTreeAmpIndex {
         Ok(())
     }
 
+    pub fn dump(self: &BTreeAmpIndex) {
+        for (key, val) in self.keyword_index.iter() {
+            dbg!(key);
+            dbg!(val);
+        }
+    }
+
     fn reconstruct(dict: &HashMap<u32, String>, tid: u32, suffix: &str) -> String {
         dict.get(&tid)
             .map_or_else(|| suffix.to_string(), |t| format!("{}{}", t, suffix))

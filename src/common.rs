@@ -149,13 +149,15 @@ pub fn collapse_keywords(keywords: &[String]) -> Vec<(String, usize)> {
         let curr_len = curr.chars().count();
         let mut j = i + 1;
         let mut n_collapsed = 0;
+        let mut prev = curr;
 
         // extend the run as long as each next is curr + exactly one char
         while j < keywords.len() {
             let nxt = &keywords[j];
-            if nxt.starts_with(curr) && nxt.chars().count() == curr_len + n_collapsed + 1 {
+            if nxt.starts_with(prev) && nxt.chars().count() == curr_len + n_collapsed + 1 {
                 n_collapsed += 1;
                 j += 1;
+                prev = nxt;
             } else {
                 break;
             }
@@ -192,17 +194,19 @@ pub fn collapse_keywords_ex(
     let mut i = 0;
     while i < keywords_ext.len() {
         let (curr, curr_fk) = keywords_ext[i];
-
         let curr_len = curr.chars().count();
+
         let mut j = i + 1;
         let mut n_collapsed = 0;
+        let mut prev = curr;
 
         // extend the run as long as each next is curr + exactly one char
         while j < keywords_ext.len() {
             let (nxt, _) = keywords_ext[j];
-            if nxt.starts_with(curr) && nxt.chars().count() == curr_len + n_collapsed + 1 {
+            if nxt.starts_with(prev) && nxt.chars().count() == curr_len + n_collapsed + 1 {
                 n_collapsed += 1;
                 j += 1;
+                prev = nxt;
             } else {
                 break;
             }

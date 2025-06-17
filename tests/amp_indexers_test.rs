@@ -205,4 +205,3 @@ fn test_btree_full_scan() {
     let index = prepare_btree_index();
     test_scan_all_keywords(&index);
 }
-
